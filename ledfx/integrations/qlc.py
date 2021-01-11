@@ -57,6 +57,7 @@ class QLC(Integration):
         self._client = None
         self._data = []
         self._listeners = []
+        self._connect_task = None
 
         self.restore_from_data(data)
 
@@ -195,7 +196,9 @@ class QLC(Integration):
         response = await self._client.query(message)
         widgets_list = response.lstrip(f"{message}|").split("|")
         # Then get the type for each widget (in individual requests bc QLC api be like that)
-        for widget_id, widget_name in enumerate(widgets_list[1::2]):
+        for widget_id, widget_name in zip(
+            widgets_list[::2], widgets_list[1::2]
+        ):
             message = "QLC+API|getWidgetType"
             response = await self._client.query(f"{message}|{widget_id}")
             widget_type = response.lstrip(f"{message}|")
@@ -211,12 +214,26 @@ class QLC(Integration):
     async def connect(self):
         domain = f"{self._config['ip_address']}:{str(self._config['port'])}"
         url = f"http://{domain}/qlcplusWS"
-        self._client = QLCWebsocketClient(url, domain)
-        await self._client.connect()
+        if self._client is None:
+            self._client = QLCWebsocketClient(url, domain)
+        self._cancel_connect()
+        self._connect_task = asyncio.create_task(self._client.connect())
+        if await self._connect_task:
+            self.connected(f"Connected to QLC+ websocket at {domain}")
 
     async def disconnect(self):
+        self._cancel_connect()
         if self._client is not None:
-            await self._client.disconnect()
+            # fire and forget bc for some reason close() never returns... -o-
+            async_fire_and_forget(
+                self._client.disconnect(), loop=self._ledfx.loop
+            )
+        self.disconnected("Disconnected from QLC+ websocket")
+
+    def _cancel_connect(self):
+        if self._connect_task is not None:
+            self._connect_task.cancel()
+            self._connect_task = None
 
 
 class QLCWebsocketClient(aiohttp.ClientSession):
@@ -231,17 +248,18 @@ class QLCWebsocketClient(aiohttp.ClientSession):
         while True:
             try:
                 self.websocket = await self.ws_connect(self.url)
-                _LOGGER.info(f"Connected to QLC+ websocket at {self.domain}")
-                return
+                return True
             except aiohttp.client_exceptions.ClientConnectorError:
                 _LOGGER.info(
                     f"Connection to {self.domain} failed. Retrying in 5s..."
                 )
                 await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                return False
 
     async def disconnect(self):
         if self.websocket is not None:
-            return await self.websocket.close()
+            await self.websocket.close()
 
     async def begin(self, callback):
         """Connect and indefinitely read from websocket, returning messages to callback func"""

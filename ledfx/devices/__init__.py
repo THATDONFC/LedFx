@@ -174,6 +174,13 @@ class Device(BaseRegistry):
         merging multiple segments segments and alpha blending channels
         """
         frame = None
+
+        # quick bugfix.
+        # this all needs to be reworked for effects like real_strobe
+        # where the effect drives the device, not vice-versa
+        if self._active_effect is None:
+            return None
+
         if self._active_effect._dirty:
             # Get and process active effect frame
             pixels = self._active_effect.get_pixels()
@@ -272,6 +279,7 @@ class Devices(RegistryLoader):
             self.clear_all_effects()
 
         self._ledfx.events.add_listener(cleanup_effects, Event.LEDFX_SHUTDOWN)
+        self._zeroconf = zeroconf.Zeroconf()
 
     def create_from_config(self, config):
         for device in config:
@@ -311,19 +319,18 @@ class Devices(RegistryLoader):
         # Scan the LAN network that match WLED using zeroconf - Multicast DNS
         # Service Discovery Library
         _LOGGER.info("Scanning for WLED devices...")
-        zeroconf_obj = zeroconf.Zeroconf()
-        listener = MyListener(self._ledfx)
-        browser = zeroconf.ServiceBrowser(
-            zeroconf_obj, "_wled._tcp.local.", listener
+        wled_listener = WLEDListener(self._ledfx)
+        wledbrowser = self._zeroconf.add_service_listener(
+            "_wled._tcp.local.", wled_listener
         )
         try:
             await asyncio.sleep(10)
         finally:
             _LOGGER.info("Scan Finished")
-            zeroconf_obj.close()
+            self._zeroconf.remove_service_listener(wled_listener)
 
 
-class MyListener:
+class WLEDListener:
     def __init__(self, _ledfx):
         self._ledfx = _ledfx
 
@@ -336,6 +343,7 @@ class MyListener:
 
         if info:
             address = socket.inet_ntoa(info.addresses[0])
+            hostname = str(info.server)
             url = f"http://{address}/json/info"
             # For each WLED device found, based on the WLED IPv4 address, do a
             # GET requests
@@ -364,12 +372,12 @@ class MyListener:
                 "universe_size": unisize,
                 "name": wledname,
                 "pixel_count": wledcount,
-                "ip_address": address,
+                "ip_address": hostname,
             }
 
             # Check this device doesn't share IP with any other device
             for device in self._ledfx.devices.values():
-                if device.config["ip_address"] == address:
+                if device.config["ip_address"] == hostname:
                     return
 
             # Create the device

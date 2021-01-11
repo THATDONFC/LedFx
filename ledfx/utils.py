@@ -6,6 +6,7 @@ import logging
 import os
 import pkgutil
 import re
+import socket
 import sys
 from abc import ABC
 
@@ -106,6 +107,19 @@ def async_callback(loop, callback, *args):
 
     loop.call_soon_threadsafe(run_callback)
     return future
+
+
+def resolve_destination(destination):
+    # check if ip/hostname resolves okay
+    cleaned_dest = destination.rstrip(".")
+    try:
+        return socket.gethostbyname(cleaned_dest)
+    except socket.gaierror:
+        return False
+
+
+def currently_frozen():
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
 def generate_id(name):
@@ -234,13 +248,8 @@ class RegistryLoader(object):
         # within the package changes.
         # Check ledfx is not running as a single exe built using pyinstaller
         # (sys frozen flag).
-        if (
-            ledfx.dev_enabled()
-            and import_or_install("watchdog")
-            and not getattr(sys, "frozen", False)
-            and hasattr(sys, "_MEIPASS")
-        ):
-
+        if ledfx.dev_enabled() and not currently_frozen():
+            import_or_install("watchdog")
             watchdog_events = import_or_install("watchdog.events")
             watchdog_observers = import_or_install("watchdog.observers")
 

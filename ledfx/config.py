@@ -5,8 +5,6 @@ import sys
 import voluptuous as vol
 import yaml
 
-_LOGGER = logging.getLogger(__name__)
-
 CONFIG_DIRECTORY = ".ledfx"
 CONFIG_FILE_NAME = "config.yaml"
 DEFAULT_PRESETS_FILE_NAME = "default_presets.yaml"
@@ -30,6 +28,11 @@ CORE_CONFIG_SCHEMA = vol.Schema(
 )
 
 
+def load_logger():
+    global _LOGGER
+    _LOGGER = logging.getLogger(__name__)
+
+
 def get_default_config_directory() -> str:
     """Get the default configuration directory"""
 
@@ -44,6 +47,12 @@ def get_config_file(config_dir: str) -> str:
 
     config_path = os.path.join(config_dir, CONFIG_FILE_NAME)
     return config_path if os.path.isfile(config_path) else None
+
+
+def get_log_file_location():
+    config_dir = get_default_config_directory()
+    log_file_path = os.path.abspath(os.path.join(config_dir, "LedFx.log"))
+    return log_file_path
 
 
 def create_default_config(config_dir: str) -> str:
