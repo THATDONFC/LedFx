@@ -67,10 +67,13 @@ jobs:
           pre-commit install-hooks
       - name: Run black
         run: |
+          . venv/bin/activate
           pre-commit run --hook-stage manual black --all-files --show-diff-on-failure
       - name: Run flake8
         run: |
+          . venv/bin/activate
           pre-commit run --hook-stage manual flake8 --all-files
       - name: Run isort
         run: |
+          . venv/bin/activate
           pre-commit run --hook-stage manual isort --all-files --show-diff-on-failure
