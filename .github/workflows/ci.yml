@@ -12,8 +12,8 @@ env:
   PRE_COMMIT_HOME: ~/.cache/pre-commit
 
 jobs:
-  base:
-    name: Setup base for CI
+  linting:
+    name: Lint and format Python files
     runs-on: ubuntu-latest
     steps:
       - name: Check out code from GitHub
@@ -61,7 +61,7 @@ jobs:
           . venv/bin/activate
           pre-commit run check-yaml
           pre-commit run check-ast
-          pre-commit run trailing-whitespaces
+          pre-commit run trailing-whitespace
           pre-commit run check-toml
       - name: Run black
         run: |
