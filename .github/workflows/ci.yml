@@ -18,13 +18,6 @@ jobs:
     steps:
       - name: Check out code from GitHub
         uses: actions/checkout@v2
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-          gcc \
-          libatlas3-base \
-          portaudio19-dev \
-          python3-pip
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
         uses: actions/setup-python@v2.2.1
@@ -38,11 +31,9 @@ jobs:
           key: >-
             ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{
             steps.python.outputs.python-version }}-${{
-            hashFiles('requirements.txt') }}-${{
             hashFiles('requirements-dev.txt') }}
           restore-keys: |
-            ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{ steps.python.outputs.python-version }}-${{hashFiles('requirements.txt') }}-${{ hashFiles('requirements-dev.txt') }}-
-            ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{ steps.python.outputs.python-version }}-${{hashFiles('requirements.txt') }}
+            ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{ steps.python.outputs.python-version }}-${{ hashFiles('requirements-dev.txt') }}
             ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{ steps.python.outputs.python-version }}-
       - name: Create Python virtual environment
         if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -50,7 +41,7 @@ jobs:
           python -m venv venv
           . venv/bin/activate
           pip install -U pip setuptools wheel
-          pip install -r requirements.txt -r requirements-dev.txt
+          pip install -r requirements-dev.txt
       - name: Restore pre-commit environment from cache-name
         id: cache-precommit
         uses: actions/cache@v2
