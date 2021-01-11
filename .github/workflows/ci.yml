@@ -1,4 +1,4 @@
-name: CI
+name: CI Linting
 
 on:
   push:
@@ -59,10 +59,10 @@ jobs:
       - name: Run pre-commit hooks
         run: |
           . venv/bin/activate
-          pre-commit run check-yaml
-          pre-commit run check-ast
-          pre-commit run trailing-whitespace
-          pre-commit run check-toml
+          pre-commit run check-yaml --all-files --show-diff-on-failure
+          pre-commit run check-ast --all-files --show-diff-on-failure
+          pre-commit run trailing-whitespace --all-files --show-diff-on-failure
+          pre-commit run check-toml --all-files --show-diff-on-failure
       - name: Run black
         run: |
           . venv/bin/activate
