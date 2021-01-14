@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install system dependencies
         run:  |
-          sudo apt-update && apt-get install -y python3-dev portaudio19-dev libatlas3-base
+          sudo apt-get update && sudo apt-get install -y python3-dev portaudio19-dev libatlas3-base
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
         uses: actions/setup-python@v2.2.1
