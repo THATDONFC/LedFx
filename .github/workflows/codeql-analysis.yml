@@ -55,10 +55,10 @@ jobs:
           python -m venv venv
           . venv/bin/activate
           pip install -U pip	wheel setuptools
-          pip install -r requirements-dev.txt
-          # Set the `CODEQL-PYTHON` environment variable to the Python executable
-          # that includes the dependencies
+          pip install Cython
           echo "::set-env name=CODEQL_PYTHON::$(which python)"x'
+        # Set the `CODEQL-PYTHON` environment variable to the Python executable
+        # that includes the dependencies
 
       # Initializes the CodeQL tools for scanning
       - name: Initialize CodeQL
