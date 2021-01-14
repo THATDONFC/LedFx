@@ -1,22 +1,12 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
-#
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-# ******** NOTE ********
-
-name: CI Linting and CodeQL
+name: CodeQL Analysis
 
 on:
   push:
     branches:
       - dev
-  pull_request: ~
+  pull_request:
+    branches:
+      - dev
   schedule:
     - cron: '0 8,20 * * *'
   workflow_dispatch:
@@ -24,7 +14,6 @@ on:
 env:
   CACHE_VERSION: 1
   DEFAULT_PYTHON: 3.9
-  PRE_COMMIT_HOME: ~/.cache/pre-commit
 
 jobs:
   analyze-python:
@@ -42,7 +31,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install system dependencies
         run:  |
-          sudo apt-get update && sudo apt-get install -y python3-dev portaudio19-dev libatlas3-base
+          sudo apt-get update && sudo apt-get install -y portaudio19-dev libatlas3-base
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
         uses: actions/setup-python@v2.2.1
@@ -64,45 +53,12 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           python -m venv venv
-            . venv/bin/activate
+          . venv/bin/activate
           pip install -U pip	wheel setuptools
           pip install -r requirements-dev.txt
-        # Set the `CODEQL-PYTHON` environment variable to the Python executable
-        # that includes the dependencies
-        # echo "::set-env name=CODEQL_PYTHON::$(which python)"x'
-      - name: Restore pre-commit environment from cache-name
-        id: cache-precommit
-        uses: actions/cache@v2
-        with:
-          path: ${{ env.PRE_COMMIT_HOME }}
-          key: |
-            ${{ env.CACHE_VERSION }}-${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            ${{ env.CACHE_VERSION }}-${{ runner.os }}-pre-commit-
-      - name: Install pre-commit dependencies
-        if: steps.cache-precommit.outputs.cache-hit != 'true'
-        run: |
-          . venv/bin/activate
-          pre-commit install-hooks
-      - name: Run pre-commit hooks
-        run: |
-          . venv/bin/activate
-          pre-commit run check-yaml --all-files --show-diff-on-failure
-          pre-commit run check-ast --all-files --show-diff-on-failure
-          pre-commit run trailing-whitespace --all-files --show-diff-on-failure
-          pre-commit run check-toml --all-files --show-diff-on-failure
-      - name: Run black
-        run: |
-          . venv/bin/activate
-          pre-commit run black --all-files --show-diff-on-failure
-      - name: Run flake8
-        run: |
-          . venv/bin/activate
-          pre-commit run flake8 --all-files
-      - name: Run isort
-        run: |
-          . venv/bin/activate
-          pre-commit run isort --all-files --show-diff-on-failure
+          # Set the `CODEQL-PYTHON` environment variable to the Python executable
+          # that includes the dependencies
+          echo "::set-env name=CODEQL_PYTHON::$(which python)"x'
 
       # Initializes the CodeQL tools for scanning
       - name: Initialize CodeQL
