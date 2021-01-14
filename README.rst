@@ -87,10 +87,13 @@ Join the Discord server to discuss everything about LedFx! |Discord|
 
 To join, click on the Discord button below:
 
-.. raw:: html
+.. .. raw:: html
 
-    <a href="https://discord.com/invite/wJ755dY"><img src="https://discordapp.com/api/guilds/469985374052286474/widget.png?style=banner2" width="30%"></a>
+..     <a href="https://discord.com/invite/wJ755dY"><img src="https://discordapp.com/api/guilds/469985374052286474/widget.png?style=banner2" width="30%"></a>
 
+.. image:: https://discordapp.com/api/guilds/469985374052286474/widget.png?style=banner2
+   :width: 30%
+   :target: https://discord.com/invite/wJ755dY
 
 Contributing
 --------------
