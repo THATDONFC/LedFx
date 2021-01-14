@@ -10,17 +10,21 @@
 # supported CodeQL languages.
 # ******** NOTE ********
 
-name: "CodeQL"
+name: CI Linting and CodeQL
 
 on:
   push:
-    branches: dev
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: dev
+    branches:
+      - dev
+  pull_request: ~
   schedule:
     - cron: '0 8,20 * * *'
   workflow_dispatch:
+
+env:
+  CACHE_VERSION: 1
+  DEFAULT_PYTHON: 3.9
+  PRE_COMMIT_HOME: ~/.cache/pre-commit
 
 jobs:
   analyze-python:
@@ -31,77 +35,88 @@ jobs:
       fail-fast: false
       matrix:
         language: [ 'python' ]
-        # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python' ]
-        # Learn more...
         # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install system dependencies
+        run:  |
+          sudo apt-update && apt-get install -y python3-dev portaudio19-dev libatlas3-base
+      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
+        id: python
+        uses: actions/setup-python@v2.2.1
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+      - name: Restore Python virtual environment
+        id: cache-venv
+        uses: actions/cache@v2
+        with:
+          path: venv
+          key: >-
+            ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{
+            steps.python.outputs.python-version }}-${{
+            hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{ steps.python.outputs.python-version }}-${{hashFiles('requirements-dev.txt') }}-
+            ${{ env.CACHE_VERSION }}-${{ runner.os }}-base-venv-${{ steps.python.outputs.python-version }}-
+      - name: Create Python virtual environment
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m venv venv
+            . venv/bin/activate
+          pip install --U pip	wheel setuptools
+          pip install -r requirements-dev.txt
+        # Set the `CODEQL-PYTHON` environment variable to the Python executable
+        # that includes the dependencies
+        # echo "::set-env name=CODEQL_PYTHON::$(which python)"x'
+      - name: Restore pre-commit environment from cache-name
+        id: cache-precommit
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PRE_COMMIT_HOME }}
+          key: |
+            ${{ env.CACHE_VERSION }}-${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ env.CACHE_VERSION }}-${{ runner.os }}-pre-commit-
+      - name: Install pre-commit dependencies
+        if: steps.cache-precommit.outputs.cache-hit != 'true'
+        run: |
+          . venv/bin/activate
+          pre-commit install-hooks
+      - name: Run pre-commit hooks
+        run: |
+          . venv/bin/activate
+          pre-commit run check-yaml --all-files --show-diff-on-failure
+          pre-commit run check-ast --all-files --show-diff-on-failure
+          pre-commit run trailing-whitespace --all-files --show-diff-on-failure
+          pre-commit run check-toml --all-files --show-diff-on-failure
+      - name: Run black
+        run: |
+          . venv/bin/activate
+          pre-commit run black --all-files --show-diff-on-failure
+      - name: Run flake8
+        run: |
+          . venv/bin/activate
+          pre-commit run flake8 --all-files
+      - name: Run isort
+        run: |
+          . venv/bin/activate
+          pre-commit run isort --all-files --show-diff-on-failure
 
-    - name: Install system dependencies
-      run:  |
-       sudo apt-get install -y python3-dev portaudio19-dev libatlas3-base
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-#     - name: Cache pip
-#       uses: actions/cache@v2
-#       env:
-#         cache-name: cache-pip
-#       with:
-#         path: ~/.cache/pip
-#         key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/requirements.txt') }}
-#         restore-keys: |
-#           ${{ runner.os }}-build-${{ env.cache-name }}-
-    - name: Install python dependencies
-      run: |
-        python -m pip install --upgrade pip	wheel setuptools
-        pip install Cython
-#         pip install numpy==1.19.3
-#         if [ -f requirements.txt ];
-#         then pip install -r requirements.txt;
-#         fi
-#         # Set the `CODEQL-PYTHON` environment variable to the Python executable
-#         # that includes the dependencies
-#         echo "::set-env name=CODEQL_PYTHON::$(which python)"x'
-    - name: Lint with flake8
-      run: |
-        pip install flake8
-        flake8 --ignore=E501,E203,W503,F601,F811,F841 .
+      # Initializes the CodeQL tools for scanning
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
+          # Override the default behavior so that the action doesn't attempt
+          # to auto-install Python dependencies
+          setup-python-dependencies: false
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
 
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
-      with:
-        languages: ${{ matrix.language }}
-        # Override the default behavior so that the action doesn't attempt
-        # to auto-install Python dependencies
-        setup-python-dependencies: false
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # queries: ./path/to/local/query, your-org/your-repo/queries@main
-
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
-
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 https://git.io/JvXDl
-
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-
-    #- run: |
-    #   make bootstrap
-    #   make release
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
 
   analyze-javascript:
     name: Analyze Javascript
@@ -116,34 +131,19 @@ jobs:
         # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
-      with:
-        languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # queries: ./path/to/local/query, your-org/your-repo/queries@main
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
 
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v1
+      # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
+      # If this step fails, then you should remove it and run the build manually (see below)
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v1
 
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 https://git.io/JvXDl
-
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-
-    #- run: |
-    #   make bootstrap
-    #   make release
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
