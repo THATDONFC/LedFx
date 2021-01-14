@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - dev
+    # paths-ignore:
+    #   - '.*/**'
   pull_request:
     branches:
       - dev
+    paths-ignore:
+      - '.*/**'
   schedule:
     - cron: '0 8,20 * * *'
   workflow_dispatch:
@@ -55,10 +59,9 @@ jobs:
           python -m venv venv
           . venv/bin/activate
           pip install -U pip	wheel setuptools
-          pip install Cython
-          echo "::set-env name=CODEQL_PYTHON::$(which python)"x'
-        # Set the `CODEQL-PYTHON` environment variable to the Python executable
-        # that includes the dependencies
+          pip install -r requirements-dev.txt
+          pip install -r requirements.txt
+          echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
 
       # Initializes the CodeQL tools for scanning
       - name: Initialize CodeQL
