@@ -7,6 +7,8 @@ import TableCell from '@material-ui/core/TableCell';
 import Button from '@material-ui/core/Button';
 import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
+import Icon from '@material-ui/core/Icon';
+import { Link } from '@material-ui/core';
 
 const styles = theme => ({
     deleteButton: {
@@ -18,14 +20,14 @@ const styles = theme => ({
     },
     deviceLink: {
         textDecoration: 'none',
-        color: 'black',
+        color: 'inherit',
         '&:hover': {
             color: theme.palette.primary.main,
         },
     },
 });
 
-function DevicesTableItem({ device, onDelete, classes, onEdit, index }) {
+function DevicesTableItem({ device, onDelete, classes, onEdit, index, iconName }) {
     const handleDeleteDevice = () => {
         onDelete(device.id);
     };
@@ -33,19 +35,33 @@ function DevicesTableItem({ device, onDelete, classes, onEdit, index }) {
     const handleEditItem = () => {
         onEdit(device);
     };
-
+    const camel_to_snake = str =>
+        str[0].toLowerCase() +
+        str.slice(1, str.length).replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     return (
         <TableRow key={device.id}>
-            <TableCell component="th" scope="row">
+            {parseInt(window.localStorage.getItem('BladeMod')) >= 2 && (
+                <TableCell component="th" scope="row" width="40px">
+                    <Icon>
+                        {camel_to_snake(device.config.icon_name || 'SettingsInputComponent')}
+                    </Icon>
+                </TableCell>
+            )}
+            <TableCell>
                 <NavLink
                     to={'/devices/' + device.id}
                     className={classes.deviceLink}
                     key={device.id}
+                    color="inherit"
                 >
                     {device.config.name}
                 </NavLink>
             </TableCell>
-            <TableCell>{device.config.ip_address}</TableCell>
+            <TableCell>
+                <Link color="inherit" target="_blank" href={`http://${device.config.ip_address}`}>
+                    {device.config.ip_address}
+                </Link>
+            </TableCell>
             <TableCell>{device.config.pixel_count}</TableCell>
             <TableCell>{device.type}</TableCell>
             <TableCell align="right">

@@ -42,40 +42,48 @@ class Sidebar extends React.Component {
 
                     if (prop.sidebarName === 'Devices') {
                         return (
-                            <ListItem button className={listItemClass} key={prop.sidebarName}>
-                                <ListItemIcon className={classes.itemIcon}>
-                                    <prop.icon />
-                                </ListItemIcon>
-                                <ListItemText
-                                    primary={prop.sidebarName}
-                                    className={classes.itemText}
-                                    disableTypography={true}
-                                />
-                                <List className={classes.list}>
-                                    {devices.map(device => {
-                                        let listItemClass = classes.itemLink;
-                                        if (this.isViewActive(`/devices/${device.id}`)) {
-                                            listItemClass = `${listItemClass} ${classes.activeView}`;
-                                        }
-                                        return (
-                                            <NavLink
-                                                to={`/devices/${device.id}`}
-                                                className={classes.item}
-                                                key={device.id}
-                                                activeClassName="active"
-                                            >
-                                                <ListItem button className={listItemClass}>
-                                                    <ListItemText
-                                                        primary={device.config.name}
-                                                        className={classes.devicesItemText}
-                                                        disableTypography={true}
-                                                    />
-                                                </ListItem>
-                                            </NavLink>
-                                        );
-                                    })}
-                                </List>
-                            </ListItem>
+                            <div className={classes.item} key={key}>
+                                <ListItem button className={listItemClass} key={prop.sidebarName}>
+                                    <NavLink
+                                        to={`/devices`}
+                                        className={classes.item}
+                                        activeClassName="active"
+                                    >
+                                        <ListItemIcon className={classes.itemIcon}>
+                                            <prop.icon />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={prop.sidebarName}
+                                            className={classes.itemText}
+                                            disableTypography={true}
+                                        />
+                                    </NavLink>
+                                    <List className={classes.list}>
+                                        {devices.map(device => {
+                                            let listItemClass = classes.itemLink;
+                                            if (this.isViewActive(`/devices/${device.id}`)) {
+                                                listItemClass = `${listItemClass} ${classes.activeView}`;
+                                            }
+                                            return (
+                                                <NavLink
+                                                    to={`/devices/${device.id}`}
+                                                    className={classes.item}
+                                                    key={device.id}
+                                                    activeClassName="active"
+                                                >
+                                                    <ListItem button className={listItemClass}>
+                                                        <ListItemText
+                                                            primary={device.config.name}
+                                                            className={classes.devicesItemText}
+                                                            disableTypography={true}
+                                                        />
+                                                    </ListItem>
+                                                </NavLink>
+                                            );
+                                        })}
+                                    </List>
+                                </ListItem>
+                            </div>
                         );
                     }
 
