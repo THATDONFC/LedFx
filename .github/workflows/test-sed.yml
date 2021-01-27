@@ -1,4 +1,4 @@
-name: Publish Python distributions to PyPI and TestPyPI
+name: Test sed replace for sentry config
 
 on:
   push:
