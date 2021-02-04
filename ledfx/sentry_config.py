@@ -7,7 +7,9 @@ from ledfx.consts import PROJECT_VERSION
 # Otherwise the LedFx sentry key is inserted here during deployment.
 
 
-sentry_dsn = ""
+sentry_dsn = (
+    "https://4c17033f52d44c3aa372c217395dc95b@o482797.ingest.sentry.io/5596233"
+)
 if sentry_dsn != "":
     sentry_sdk.init(
         sentry_dsn,
