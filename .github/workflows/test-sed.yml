@@ -1,0 +1,18 @@
+name: Test sed replace for sentry config
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-sed:
+    name: Test sed replace for sentry config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code from GitHub
+        uses: actions/checkout@v2
+      - name: Setup sentry config
+        shell: bash
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN_PYPI }}
+        run: |
+          sed -i 's,SENTRY-DSN,'"$SENTRY_DSN"',g' ./ledfx/sentry_config.py
