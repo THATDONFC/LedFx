@@ -30,7 +30,8 @@
             libavformat58 \
             portaudio19-dev \
             pulseaudio \
-            python3-pip
+            python3-pip \
+            avahi-daemon
     python3 -m pip install --upgrade pip wheel setuptools
     curruser=$USER
     IP=$(/sbin/ip -o route get to 8.8.8.8 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
@@ -84,7 +85,7 @@
     sudo systemctl stop ledfx 2> /dev/null
     echo "Stopping Service..."
     sleep 2
-    rm ~/.ledfx/config.yaml
+    rm ~/.ledfx/config.json
     echo "Configuration Deleted"
     echo "Restarting Service..."
     sudo systemctl start ledfx 2> /dev/null
@@ -92,7 +93,7 @@
   }
 
   backup-config (){
-    cp ~/.ledfx/config.yaml ~/config.yaml.bak
+    cp ~/.ledfx/config.json ~/config.json.bak
     menu
   }
 
@@ -118,7 +119,7 @@
   }
 
   menu () {
-    FILE=~/.ledfx/config.yaml
+    FILE=~/.ledfx/config.json
     if [ -f "$FILE" ]; then
 
     INSTALLOPTION=$(
